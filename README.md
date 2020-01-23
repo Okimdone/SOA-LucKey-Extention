@@ -18,7 +18,7 @@ It’s hard to find a market that has been more shaken up by the popularity of t
 
 ​			There are so many e-commerce business startups that fail (80% or more), and this should not come as a surprise since most business startups fail regardless of their type. However, e-commerce business failures happen because of reasons specific to the online world in addition to fundamental business oversights. The online business landscape has matured since the wild west days of the late 1990s and early 2000s. A great idea and a website with some traffic may have worked back then, but probably isn’t enough for success in today’s competitive online landscape, since the companies have to keep track of so many new challenging problems nowadays such as the quality of their user's experience on the website, the trust of the clients and the ability to compete with other successful online stores that are companies with specialized staff that do its many operations. These might include content writers, marketing people, SEO specialists, social media experts, and so forth. 
 
-*So where does the customer come from in all of this ?*
+*So where does the customer come into in all of this ?*
 
 When you check out popular e-commerce websites these days, you can easily see how well-researched and organized they are to present products and prices, to the point where they could entice a customer to buy a very expensive item that contains an enormous red number next to a percentage as a discount, having no clue how the original price of the item was increased to a ridiculously big number only to return to what it was originally a month ago or even greater. And with that, you start to realize how good the companies and retailers has gotten at engaging in the marketing games or what can be described as a scam in certain situations.
 
@@ -70,7 +70,7 @@ The general usage of  **LucKey** should be presented as follows :
    3. Enter a valid Phone Number if the client requests a SMS notification.
    4. Enter a valid Email address if the client requests an Email notification.
 
-### 1.2.4. Conclusion :
+## 1.3. Conclusion :
 
 ​			In this chapter we defined the problem, how the **"LucKey"** extension we are making is going to be of service, and finally some rules and statements that gives a general description of the "company" from which we would be modeling and extracting the actual services and microservices in the following chapters.
 
