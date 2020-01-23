@@ -2,7 +2,7 @@
 
 # Abstract
 
-It’s hard to find a market that has been more shaken up by the popularity of the internet than commerce. From mom and pop shops in your local area to retail giants, online shopping has completely changed the game when it  comes to convincing shoppers to purchase goods from physical stores or even when it's presented as a digital content such as online courses. And with this change of events, the competition between the companies had skyrocket pushing them to use all kinds of strategies for their clients which have no way of defending themselves. Here we present two services which can be used by the client application: the first can check for the availability of coupons for an item, the second can be set to notify the client for when an item's price has gotten reduced bellow a threshold, and then we would be writing a browser extention that would invoke and use our web services.
+It’s hard to find a market that has been more shaken up by the popularity of the internet than commerce. From mom and pop shops in your local area to retail giants, online shopping has completely changed the game when it  comes to convincing shoppers to purchase goods from physical stores or even when it's presented as a digital content such as online courses. And with this change of events, the competition between the companies had skyrocket pushing them to use all kinds of strategies for their clients which have no way of defending themselves. Here we present two services which can be used by the client application: the first can check for the availability of coupons for an item, the second can be set to notify the client for when an item's price has gotten reduced bellow a threshold, and then we would be writing a browser extension that would invoke and use our web services.
 
 
 
@@ -28,7 +28,51 @@ When you check out popular e-commerce websites these days, you can easily see ho
 
 ​			As a solution to the online shopping's struggles which the customer is  facing and is going to keep encountering as long as the web exists, we  suggest creating web services, that gives all kinds of handful flexible tools to a client, Improving his shopping experience by aiding him at making better choices online, and giving client-programmers and developers flexible web services which can be used to creative more handy services/tools, making the Internet a better place. 
 
-In this document we would be creating two main services, one which is supposed to fetch possible working coupons for an item - *that is supplied by a giving URL* - and the second is a service that can be set to notify to user for changes in the price of a given item.
+In this document we would documenting the creation of two main services, one which is supposed to fetch possible working coupons for an item - *that is supplied by a giving URL* - and the second is a service that can be set to notify the users for changes in the prices of a given items. These services need to be flexible and scalable to facilitate adding additional support and functionality to additional commercial websites, and this is the very part where the SOA architecture would be useful.
+
+Since this project aligns with some of the functionality which the **Honey (company)** offers, We would formulate the problem we are going to solve as follows, we would be going through the rest of the document as if we are trying to start a similar company which we are going to call **"LucKey"** which is supposed to operate a browser extension that aggregates and automatically applies online coupons, plus offer a notification functionality as a service which can be set to monitor the prices of displayed items on the websites we support and notify the user of changes on their prices and/or the availability of price reductions throughout later aggregated coupons. 
+
+In the next sections we are going to extract the business requirements, the actors/stakeholders and the main services that would be used by our own extension. 
+
+### 1.2.1. Describing the functionalities :
+
+​			Since **"LucKey"** is going to be a browser extension, it would be presented to clients as a small interface on the side that could be opened and closed when needed - *and that's when the user wants to check for the availability of online coupons, on configure a notification system* - .
+
+The general usage of  **LucKey** should be presented as follows :
+
+* Give the client the ability to login.
+* When the client is logged in, he can use our offered services:
+  * Get the best coupon applied on the opened item.
+  * Set up a notification system on price changes of an item.
+
+### 1.2.2. Identifying the actors :
+
+​			From the different functionalities listed above we could infer the actors we Have in our almost digital company : 
+
+* **Client (external actor):** The most obvious one since he's the one that would be interacting with our extension through a small opened window on the browser's page.
+* **IT department (internal actor):**  Since the application that does the actual work would be hosted on the cloud. This department should take care of getting feedbacks, adding additional microservices, adding more functionality to old services and taking care of the security and the availability of our services, databases and virtual servers. 
+* **Gmail (external actor):**  Since we would be using a Gmail email to notify the clients, Gmail can be considered as a stakeholder.
+* **Nexmo (external actor):** Can be considered as an other stakeholder which offers an API that gives us the capability to notify client by sending SMS messages.
+* **Google and Facebook (external actors):** Can also be considered as other stakeholders since we de be using some of their services to offer easy authentication to the client. 
+
+### 1.2.3. Defining the business rules :
+
+​			For each process there are constraints and conditions that must be met in order to be able to use one of our offered services, theses constraints are listed bellow : 
+
+1. **Login rule :**  For a client to login for our services one must login or get registered, and to do so a Facebook account, or a google account is required.
+2. **Checking for coupons rule : **For a client to use this service, one must meet all of these conditions : 
+   1. Be connected to the extension.
+   2. Have one of the website that we support open.
+   3. The official item's page must be open when the extension is being used.
+3. **Setting up a notification alarm rule :**  **For a client to use this service, one must meet all of these conditions : 
+   1. Be connected to the extension.
+   2. Have one of the website that we support open.
+   3. Enter a valid Phone Number if the client requests a SMS notification.
+   4. Enter a valid Email address if the client requests an Email notification.
+
+### 1.2.4. Conclusion :
+
+​			In this chapter we defined the problem, how the **"LucKey"** extension we are making is going to be of service, and finally some rules and statements that gives a general description of the "company" from which we would be modeling and extracting the actual services and microservices in the following chapters.
 
 # 2. State of the art :
 
@@ -243,21 +287,9 @@ This guiding principle embodies the purpose of the Service Loose Coupling design
 
 
 
+## 	2.3. SOA analysis :
 
-
-
-
-service-oriented computing is to align technology and business via the application of service-orientation. The stage at which this alignment is initially accomplished is during the analysis and modeling processes that usually precede actual service development and delivery.
-
-## 	2.3. Service orientated analysis :
-
-### 2.3.1. Identifying the actors :
-
-### 2.3.2. Defining the services :
-
-### 2.3.3. Defining the business rules :
-
-
+​			
 
 # 3. Modeling the services :
 
