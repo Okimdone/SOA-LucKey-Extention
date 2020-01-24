@@ -281,25 +281,133 @@ This guiding principle embodies the purpose of the Service Loose Coupling design
 
 ​			Each service requires a well-deﬁned functional context that determines what logic does and does not belong within the service’s functional boundary. Determining the scope and granularity of these functional service boundaries is one of the most critical responsibilities during the service delivery lifecycle. 
 
-### 2.2.4. Conclusion : 
+## 2.3. Conclusion : 
 
 ​			Many of the guiding principles described in this manifesto help to make this determination in support of positioning each service as an IT asset that is capable of furthering an IT enterprise toward that target state whereby the strategic beneﬁts of service-oriented computing are realized. Ultimately, though, it is the attainment of real-world business value that dictates, from conception to delivery to repeated usage, the evolutionary path of any unit of service-oriented functionality.
 
+# 3. Analyzing and Modeling the services :
+
+​			In this chapter we are going to organize the information we gathered in the preceding chapters, together with the **SOA reference model**'s layers, to decompose the business processes into deployable modeled web services. which can be used to orchestrate our main composite services. 
+
+## 	3.1. Business process layer :
+
+​			The Business Process Layer refers to the business processes that are performed for the production of products and services. This level is dominated by the “business process logic” for the analysis of processes into activities and tasks. And the way we would be using this layer to extract the necessary entity service candidates is as follows : 
+
+1. First, we start with a *BPMN Collaboration Diagram* to describe the processes our application have.
+2. Second, we take a list of the business processes and we break it down into a series of granular process steps.
+3. We repeat the 2nd step while their are processes that can be decomposed.
+4. Then we go to the next step : **The business service layer**
 
 
-## 	2.3. SOA analysis :
 
-​			
+### 3.1.1. BPMN Collaboration Diagram : 
 
-# 3. Modeling the services :
+​			Bellow is the collaboration diagram of our **"luckey"** extension, and since this project is mostly an IT project, we tried to minimize detailing the processes and how they would be implemented to the minimum and only keep the important logic on the Business process layer, so as to not end up creating a silo-based  information system, one which is incapable of reciprocal operations with others information systems that are, or should be, related.
 
-## 	3.1. bpmn 
+![BPMN Collaboration Diagram](report-img\BPMN_collab.svg)
 
-## 	3.2. bpel
+### 3.1.2  Decompose the Business Process (into Granular Actions) :		
+
+​			From the preceding diagram we can state the following main processes : 
+
+1. Sign in/Sign up process.
+2. Coupon aggregator process.
+3. Notification setter process.
+
+And in the rest of this section we would be decomposing theses processes into the smallest process steps. Starting from the first process : 
+
+1. Sign in/Sign up process : 
+
+   1. Receive a request from **LucKey** extension.
+   2. If the received request is a sign up request : 
+      1. Store the new User's information.
+   3. Generate a unique ID for the User.
+   4. Send a response message containing the generate ID back to the client
+   5. **End**
+
+   
+
+2. Coupon aggregator process :
+
+   1. Receive a request from the **LucKey** extension.
+   2. Condition on the passed URL : 
+      1. if we don't support the passed item's domain name. Send an informative message to the User and **End**.
+      2. else, start the coupon aggregator **- service -** made for that specific website : 
+         1. if a working coupon exists for that specific item send it.
+         2. else aggregate possibly working coupons and send them to the client side, to try them.
+         3. **End.**
+
+**P.S.:** At this stage we can start to realize the utility of the SOA architecture since it seems that the coupon service's functionality would be limited to a finite set of supported website. But since the coupon aggregator for a specific website could be presented as a web service, maintaining and adding more support to new websites can feel more flexible and agile.
+
+3. Notification setter process :
+   1. Receive a request from the **LucKey** extension.
+   2. Condition on the passed URL :
+      1. if we don't support the passed item's domain name. Send an informative message to the User and **End**.
+      2. else, loop through the user notification's chosen options (SMS/Email...)
+      3. Set the corresponding service to launch 
+         1. Get the initial price's value.
+         2. wait a time interval before checking again.
+         3. if price changed, continue executing the corresponding service.
+         4. else, go back to step 2. (ii.) and keep waiting.
+      4. if price changed send the corresponding notification, and **End.** 
+
+## 3.2. The business service layer :
+
+ 			In this layer, we would be identifying service candidates. And we are going to do so by assessing the individual units of solution logic that are required to solve a larger problem, we may realize that only a subset of the logic is suitable for encapsulation within services.
+
+The result of the encapsulation process would be presented bellow : 
+
+* [Sign in/Sign up process service] : 
+  (**Takes as input** : type_of_the_request, and information needed to execute the task) 
+  (**Returns as output** : an identifier for the logged in client)
+  **Invoked Micro-services :**
+
+  1. if type_of_the_request is of type register : invoke [Register service] 
+     1. [Sign up service] : 
+        (**Takes as input : ** information needed to execute the registration) 
+        (**Returns as output : ** internal ID affected to the user)
+  2. invoke [Sign in service] : 
+     1. [Sign in service] : 
+        (**Takes as input : ** internal ID affected to the user) 
+        (**Returns as output : ** external ID to identify the user)
+
+* [Coupon aggregator service] 
+  (**Takes as input :** the URL of the item)
+  (**Returns as output :** A list of the possibly working coupons, or empty if not supported)
+  **Invoked Micro-services :**
+
+  1. [Coupon aggregator for a specific website **X** service] 
+     (**Takes as input :** the URL of the item)
+     (**Returns as output :** A list of possibly working coupon)
+
+* [Notification setter service] 
+  (**Takes as input:** Item_URL , condition_type, chosen_notification_types, address_location)
+  (**Returns as output :** status_flag_of_the_request)
+  **Invoked services :**
+
+  1. [Notification deamon service]
+     (**Takes as input:** Item_URL , condition_type, chosen_notification_types)
+     (**Returns as output :** status)
+     **Invoked Micro-services :**
+
+     1. [Send notification of type **X** service] :
+
+        (**Takes as input** : address_location)
+        (**Returns as output :** flag)
+
+So in this layer we could list the main composed services as follows : 
+
+1. Sign in/Sign up process service.
+2. Coupon aggregator service.
+3. Notification setter service.
+
+
 
 # 4. implementation
 
 ## 	4.1 tools
+
+??Federated login
 
 # 5. conclusion
 
