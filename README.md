@@ -28,7 +28,7 @@ When you check out popular e-commerce websites these days, you can easily see ho
 
 ​			As a solution to the online shopping's struggles which the customer is  facing and is going to keep encountering as long as the web exists, we  suggest creating web services, that gives all kinds of handful flexible tools to a client, Improving his shopping experience by aiding him at making better choices online, and giving client-programmers and developers flexible web services which can be used to creative more handy services/tools, making the Internet a better place. 
 
-In this document we would documenting the creation of two main services, one which is supposed to fetch possible working coupons for an item - *that is supplied by a giving URL* - and the second is a service that can be set to notify the users for changes in the prices of a given items. These services need to be flexible and scalable to facilitate adding additional support and functionality to additional commercial websites, and this is the very part where the SOA architecture would be useful.
+In this document we would be documenting the creation of two main services, one which is supposed to fetch possible working coupons for an item - *that is supplied by a giving URL* - and the second is a service that can be set to notify the users for changes in the prices of a given items. These services need to be flexible and scalable to facilitate adding additional support and functionality to additional commercial websites, and this is the very part where the SOA architecture would be useful.
 
 Since this project aligns with some of the functionality which the **Honey (company)** offers, We would formulate the problem we are going to solve as follows, we would be going through the rest of the document as if we are trying to start a similar company which we are going to call **"LucKey"** which is supposed to operate a browser extension that aggregates and automatically applies online coupons, plus offer a notification functionality as a service which can be set to monitor the prices of displayed items on the websites we support and notify the user of changes on their prices and/or the availability of price reductions throughout later aggregated coupons. 
 
@@ -385,14 +385,14 @@ The result of the encapsulation process would be presented bellow :
   (**Returns as output :** status_flag_of_the_request)
   **Invoked services :**
 
-  1. [Notification deamon service]
+  1. [Notification thread]
      (**Takes as input:** Item_URL , condition_type, chosen_notification_types)
      (**Returns as output :** status)
      **Invoked Micro-services :**
 
      1. [Send notification of type **X** service] :
 
-        (**Takes as input** : address_location)
+        (**Takes as input** : url, address_location)
         (**Returns as output :** flag)
 
 So in this layer we could list the main composed services as follows : 
@@ -403,15 +403,695 @@ So in this layer we could list the main composed services as follows :
 
 
 
-# 4. implementation
+# 4. Implementation
 
-## 	4.1 tools
+## 4.1 Database Analysis : 
 
-??Federated login
+​			First of all we start by analyzing the type of data we will need to create our Database, and since that's not our main objective from this document we'll go past the steps and present the end model :
+
+![MLD](report-img/MLD.svg) 
+
+From this model we create our database which would be used by our services. then we configure a user named "admin" and a password:"1234" and a database named "luckeydb" in which we would be creating our tables above.
+
+
+
+## 4.2 Setting up the environment:
+
+​			In the following section we would be downloading and setting up our environment directly onto our home directory, since in this example we are working on an AWS EC2 Ubuntu instance, our home directory would be : **/home/ubuntu**.
+
+
+
+### 4.2.1. Setting up Java:
+
+#### What is Java?
+
+​			Java is a general-purpose programming  language that is class-based, object-oriented, and designed to have as  few implementation dependencies as possible. It is intended to let  application developers write once, run anywhere, meaning that compiled  Java code can run on all platforms that support Java without the need  for recompilation.
+
+#### Download and configuration: 
+
+Download and install a Java Development Kit (JDK) release (version 1.5 or later) from http://java.sun.com/j2se/. Install the JDK according to the instructions included with the release. Set an environment variable JAVA_HOME to the pathname of the directory into which you installed the JDK release.
+
+```bash
+$ export PATH=$PATH:/home/ubuntu/jdk1.8.0_241/bin
+$ export JAVA_HOME=/home/ubuntu/jdk1.8.0_241
+```
+
+
+
+### 4.2.2. Setting up Axis2:
+
+#### What is Axis2?
+
+​			The Apache Axis2 project is a Java-based implementation of both the client and server sides of the Web services equation. Designed to take advantage of the lessons learned from Apache Axis 1.0, Apache Axis2 provides a complete object model and a modular architecture that makes it easy to add functionality and support for new Web services-related specifications and recommendations.
+
+Axis2 enables you to easily perform the following tasks:
+
+* Send SOAP messages
+
+- Receive and process SOAP messages
+- Create a Web service out of a plain Java class
+- Create implementation classes for both the server and client using WSDL
+- Easily retrieve the WSDL for a service
+- Send and receive SOAP messages with attachments
+- Create or utilize a REST-based Web service
+- Create or utilize services that take advantage of [ WS-Security](http://www.oasis-open.org/committees/download.php/16790/wss-v1.1-spec-os-SOAPMessageSecurity.pdf) and [WS-Addressing](http://www.w3.org/2002/ws/addr/)
+
+Many more features exist as well, but this user guide concentrates on showing you how to accomplish the first five tasks on this list.
+
+#### Download and configuration:
+
+​			Download and unpack the Axis2 Binary Distribution into a convenient location **- the $HOME directory in our case -** so that the distribution resides in its own directory. Set an environment variables AXIS2_HOME to the pathname of the extracted directory of Axis2 Eg:
+
+```bash
+$ export AXIS2_HOME=/home/ubuntu/axis2/axis2-1.7.9
+```
+
+
+
+### 4.2.3. Setting up Tomcat:
+
+#### What s Tomcat?
+
+​			**Apache Tomcat** (sometimes simply "Tomcat") is an [open-source]implementation of the Java Servlet, JavaServer Pages, Java Expression Language and WebSocket technologies. Tomcat provides a "pure Java" HTTP web server environment in which Java code can run.
+
+#### Download and configuration:
+
+​			Download the binary of the **Tomcat** server, available from https://tomcat.apache.org/. Detailed instructions for downloading and installing Tomcat are available [here](https://tomcat.apache.org/tomcat-7.0-doc/setup.html). and then set an environment variable `CATALINA_HOME` that contains the pathname to the directory in which Tomcat has been installed.
+
+```bash
+$ export CATALINA_HOME=/home/ubuntu/apache-tomcat-9.0.30
+```
+
+Then we set up our tomcat server to work with axis *Axis2*, by downloading the axis2 war distribution and moving the axis2.war file into  **$CATALINA_HOME/webapps/**:
+
+```bash
+$ cp axis2.war $CATALINA_HOME/webapps/
+```
+
+
+
+### 4.2.4. Setting up shortcuts:
+
+And so as to set our configuration to run on every shell we run the commands :
+
+```bash
+$ echo 'export JAVA_HOME=/home/ubuntu/jdk1.8.0_241' >> ~/.bashrc
+$ echo 'export PATH=$PATH:$JAVA_HOME/bin' >> ~/.bashrc
+$ echo 'export AXIS2_HOME=/home/ubuntu/axis2/axis2-1.7.9' >> ~/.bashrc
+$ echo 'export CATALINA_HOME=/home/ubuntu/apache-tomcat-9.0.30' >> ~/.bashrc
+$ echo 'alias axis=$AXIS2_HOME/bin/axis2server.sh' >> ~/.bashrc
+$ echo "alias lkey='mysql -u admin luckeydb -p1234'">> ~/.bashrc
+$ echo "alias tomcat='/home/ubuntu/apache-tomcat-9.0.30/bin/catalina.sh run'">> ~/.bashrc
+```
+
+At the end of the setup our **~/.bashrc**, looks like this : 
+
+```bash
+ubuntu@ip-172-31-95-74:~$ tail ~/.bashrc
+
+export PATH=$PATH:/home/ubuntu/jdk1.8.0_241/bin
+export JAVA_HOME=/home/ubuntu/jdk1.8.0_241
+export AXIS2_HOME=/home/ubuntu/axis2/axis2-1.7.9
+export CATALINA_HOME=/home/ubuntu/apache-tomcat-9.0.30
+alias axis=$AXIS2_HOME/bin/axis2server.sh
+alias lkey='mysql -u admin luckeydb -p1234'
+alias tomcat='/home/ubuntu/apache-tomcat-9.0.30/bin/catalina.sh run'
+```
+
+The $HOME directory looks like this : 
+
+```
+/home/ubuntu/
+├── apache-tomcat-9.0.30
+├── axis2
+└── jdk1.8.0_241
+```
+
+
+
+## 4.3. Creating our services : 
+
+​			To create our service we use the eclipse environment to create each service as a Dynamic Web Project, starting with the atomic services (*UdemyCoupon, EmailSender, SmsSender*) in our case, then create  our service compositions which implements the previously mentioned services :
+
+### 4.3.1. Creating the service inventory : 
+
+**Coupon Aggregator for Udemy :**
+
+![Udemy Coupon](C:\Users\pixel\Desktop\SOA_THE_PROJECT\report-img\CouponUdemy.jpg)
+
+
+
+**Service which can send email :**
+
+![](C:\Users\pixel\Desktop\SOA_THE_PROJECT\report-img\SendEmail.jpg)
+
+
+
+**Service which can send SMS :**
+
+![](C:\Users\pixel\Desktop\SOA_THE_PROJECT\report-img\SmsSender.jpg)
+
+
+
+### 4.3.2. Deploying the service inventory :
+
+After testing the code we deploy it as follows : 
+
+For each service we create a folder as the one shown bellow containing the compiled class in its respective package, placing its dependencies into the lib folder, and then placing the *services.xml* in the META-INF folder :
+
+The folder for our CouponUdemy service looks like this :
+
+```
+CouponUdemy/
+├── com
+│   └── luckey
+│       └── aggregators
+│           └── CouponUdemy.class
+├── lib
+│   └── mysql-connector-java-8.0.19.jar
+└── META-INF
+    └── services.xml
+```
+
+with the services.xml looking as follows, this files is the one mapping between the name of the service and the class to call for: 
+
+```xml
+<service name="CouponUdemy" >
+        <Description>
+                A Service Which takes a Udemy link and returns a json array containing coupons.
+        </Description>
+        <messageReceivers>
+                <messageReceiver mep="http://www.w3.org/ns/wsdl/in-only" class="org.apache.axis2.rpc.receivers.RPCInOnlyMessageReceiver" />
+                <messageReceiver  mep="http://www.w3.org/ns/wsdl/in-out"  class="org.apache.axis2.rpc.receivers.RPCMessageReceiver"/>
+        </messageReceivers>
+        <parameter name="ServiceClass" locked="false">com.luckey.aggregators.CouponUdemy</parameter>
+</service>
+```
+
+
+
+
+
+The folder for our EmailSender service looks like this :
+
+```
+EmailSender/
+├── luckey
+│   └── notif
+│       └── email
+│           └── EmailSender.class
+└── META-INF
+    └── services.xml
+```
+
+with the services.xml looking as follows.
+
+```xml
+<service name="EmailSender" >
+        <Description>
+                A web service which can send an email to an address, input : emailText, emailTo.
+        </Description>
+        <messageReceivers>
+                <messageReceiver mep="http://www.w3.org/ns/wsdl/in-only" class="org.apache.axis2.rpc.receivers.RPCInOnlyMessageReceiver" />
+                <messageReceiver  mep="http://www.w3.org/ns/wsdl/in-out"  class="org.apache.axis2.rpc.receivers.RPCMessageReceiver"/>
+        </messageReceivers>
+        <parameter name="ServiceClass" locked="false">luckey.notif.email.EmailSender</parameter>
+</service>
+```
+
+
+
+The folder for our SmsSender service looks like this :
+
+```
+SmsSender
+├── lib
+│   ├── annotations-13.0.jar
+│   ├── client-5.2.1.jar
+│   ├── commons-codec-1.11.jar
+│   ├── commons-io-2.5.jar
+│   ├── commons-lang3-3.5.jar
+│   ├── commons-logging-1.2.jar
+│   ├── httpclient-4.5.8.jar
+│   ├── httpcore-4.4.11.jar
+│   ├── jackson-annotations-2.9.0.jar
+│   ├── jackson-core-2.9.9.jar
+│   ├── jackson-databind-2.9.9.jar
+│   ├── jackson-dataformat-hal-1.0.4.jar
+│   ├── jackson-jaxrs-base-2.8.5.jar
+│   ├── jackson-jaxrs-json-provider-2.8.5.jar
+│   ├── jackson-module-jaxb-annotations-2.8.5.jar
+│   ├── jaxb-api-2.3.0.jar
+│   ├── jjwt-api-0.10.5.jar
+│   ├── jjwt-impl-0.10.5.jar
+│   ├── jjwt-jackson-0.10.5.jar
+│   ├── jwt-1.0.1.jar
+│   ├── kotlin-stdlib-1.3.31.jar
+│   ├── kotlin-stdlib-common-1.3.31.jar
+│   ├── kotlin-stdlib-jdk7-1.3.31.jar
+│   ├── kotlin-stdlib-jdk8-1.3.31.jar
+│   └── slf4j-api-1.7.21.jar
+├── luckey
+│   └── notif
+│       └── smssender
+│           └── SmsSender.class
+└── META-INF
+    └── services.xml
+```
+
+with the services.xml looking as follows.
+
+```xml
+<service name="SmsSender" >
+        <Description>
+                A web service which is capable to send a SMS. build on nexmo api, input : url, phoneN:string.
+        </Description>
+        <messageReceivers>
+                <messageReceiver mep="http://www.w3.org/ns/wsdl/in-only" class="org.apache.axis2.rpc.receivers.RPCInOnlyMessageReceiver" />
+                <messageReceiver  mep="http://www.w3.org/ns/wsdl/in-out"  class="org.apache.axis2.rpc.receivers.RPCMessageReceiver"/>
+        </messageReceivers>
+        <parameter name="ServiceClass" locked="false">luckey.notif.smssender.SmsSender</parameter>
+</service>
+```
+
+
+
+And then upload theses folders to the AWS instance and specifically into :
+
+```
+/home/ubuntu/apache-tomcat-9.0.30/webapps/axis2/WEB-INF/services/
+```
+
+
+
+with this we would have finished deploying our services , to test them out we use postman and send **POST** request containing a SOAP request:
+
+examples of the requests and the responses:
+
+### 4.3.3. Testing the service inventory:
+
+#### CouponUdemy :
+
+URL to the webservice : 
+
+```
+35.153.41.154:8080/axis2/services/CouponUdemy/AggregateCoupons
+```
+
+
+
+The SOAP Request :
+
+```xml
+<soapenv:Envelope  
+	  xmlns:q0="http://aggregators.luckey.com" 
+	  xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+	  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <soapenv:Header></soapenv:Header>
+    <soapenv:Body>
+        <q0:SendMailRequest>
+            <q0:url>https://www.udemy.com/course/design-conceptual-and-meaningful-logos</q0:url>
+        </q0:SendMailRequest>
+    </soapenv:Body>
+</soapenv:Envelope>
+```
+
+
+
+Example of the SOAP response :
+
+```xml
+<?xml version='1.0' encoding='UTF-8'?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+    <soapenv:Header/>
+    <soapenv:Body>
+        <ns:AggregateCouponsResponse xmlns:ns="http://aggregators.luckey.com">
+            <ns:return>[LOGO72HOURS]</ns:return>
+        </ns:AggregateCouponsResponse>
+    </soapenv:Body>
+</soapenv:Envelope>
+```
+
+```xml
+<?xml version='1.0' encoding='UTF-8'?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+    <soapenv:Header/>
+    <soapenv:Body>
+        <ns:AggregateCouponsResponse xmlns:ns="http://aggregators.luckey.com">
+            <ns:return>[FBGROUPS ,GAMEASSET1 ,LEARNPS ,MOBILEICONS ,REALICONS ,000-324 ,000-797 ,000-815 ,000-J01 ,000-S02 ,ONCEALIFETIME ,BUSINESS ,G6G2JEAKYB ,REVIEWSPECIAL ,10000FREECODES ,FREE2017 ,marketing123 ,B1V0L1072 ,NEWHAPPY ,FREE-TRIAL ,FREE-TRIAL1 ,HAPPY_NEW_YEAR ,NEW_YEAR ,100-105 ,NET-CERT ,LPONBH ,CER-100 ,CERT-100 ,NET-100 ,NETCERT ,NCICNDS ,NETCNDW ,NETCERT-105 ,100NETCERT ,86CD515ACA0E0577EA65 ,COPUON889 ,FREEEE ,TIENDEO10 ,M3DIUM ,FBGRT100 ,FREE2018ROSA ,FREEONLINEMATHCOURSE ,M17FC500 ,PROFESSIONALASSISTGA ,12STEPS-STRATEGY ,MAY2018 ,FREE2017ROSA ,REASONS100 ,SPECIALROSA ,NEWLAUNCH15SS]</ns:return>
+        </ns:AggregateCouponsResponse>
+    </soapenv:Body>
+</soapenv:Envelope>
+```
+
+
+
+ 
+
+ #### EMAIL SENDER : 
+
+URL to the webservice : 
+
+```
+35.153.41.154:8080/axis2/services/EmailSender/SendMail
+```
+
+
+
+The SOAP Request :
+
+```xml
+<soapenv:Envelope  
+	  xmlns:q0="http://email.notif.luckey" 
+	  xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+	  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <soapenv:Header></soapenv:Header>
+    <soapenv:Body>
+        <q0:SendMailRequest>
+            <q0:emailText>AAAAAAAAA</q0:emailText>
+            <q0:emailTo>myemail@gmail.com</q0:emailTo>
+        </q0:SendMailRequest>
+    </soapenv:Body>
+</soapenv:Envelope>
+```
+
+
+
+Example of the SOAP response :
+
+```xml
+<?xml version='1.0' encoding='UTF-8'?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+    <soapenv:Header/>
+    <soapenv:Body>
+        <ns:SendMailResponse xmlns:ns="http://email.notif.luckey">
+            <ns:return>false</ns:return>
+        </ns:SendMailResponse>
+    </soapenv:Body>
+</soapenv:Envelope>
+```
+
+
+
+#### SmsSender :
+
+URL to the webservice : 
+
+```
+35.153.41.154:8080/axis2/services/SmsSender/SendSMS
+```
+
+
+
+The SOAP Request :
+
+```xml
+<soapenv:Envelope  
+	  xmlns:q0="http://smssender.notif.luckey" 
+	  xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+	  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <soapenv:Header></soapenv:Header>
+    <soapenv:Body>
+        <q0:SendMailRequest>
+            <q0:url>Link to the page</q0:url>
+            <q0:phoneN>212712121212</q0:phoneN>
+        </q0:SendMailRequest>
+    </soapenv:Body>
+</soapenv:Envelope>
+```
+
+
+
+Example of the SOAP response :
+
+```xml
+<?xml version='1.0' encoding='UTF-8'?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+    <soapenv:Header/>
+    <soapenv:Body>
+        <ns:SendSMSResponse xmlns:ns="http://smssender.notif.luckey">
+            <ns:return>true</ns:return>
+        </ns:SendSMSResponse>
+    </soapenv:Body>
+</soapenv:Envelope>
+```
+
+
+
+### 4.3.4. Creating a service compositions:
+
+To create services that implement our services we must first create what we call a stub from them, and to do so we use the the script included in the binary of the axis2 as follows :
+
+```bash
+$ $AXIS2_HOME/bin/wsdl2java.sh -uri CouponUdemy.wsdl -p org.luckey.clients -d adb -s -o build/client
+```
+
+```bash
+$ $AXIS2_HOME/bin/wsdl2java.sh -uri http://35.153.41.154:8080/axis2/services/EmailSender?wsdl -p luckey.notif.clients -d adb -s -o build/
+```
+
+```bash
+$ $AXIS2_HOME/bin/wsdl2java.sh -uri http://35.153.41.154:8080/axis2/services/SmsSender?wsdl -p luckey.notif.clients -d adb -s -o build/
+```
+
+Theses commands would create java classes that implement the interface that we can use to use and implement our deployed services from the equivalent WSDL files found at the **-uri**  passed after the argument.
+
+
+
+so we places them someplace accessible where our service can access them - the main service is marked in red and the generate stub code is in yellow- : 
+
+![](C:\Users\pixel\Desktop\SOA_THE_PROJECT\report-img\couponOrch.jpg)
+
+
+
+as an example of how we can use the stub code is inserted bellow : 
+
+![](C:\Users\pixel\Desktop\SOA_THE_PROJECT\report-img\couponOrchCode.jpg)
+
+we specify the location where it would find our service and then create a request, specify the parameters in it , and then return the result.
+
+
+
+we do the same for the other service:  
+
+![](C:\Users\pixel\Desktop\SOA_THE_PROJECT\report-img\notifOrch.jpg)
+
+
+
+after finishing and testing the code locally we do try to deploy them using the same method we did previously by creating the folders that could be deployed either as they are or a as a jar file :
+
+
+
+Tree structure of the couponsAppOrchestrator
+
+```
+CouponAppOrchestrator
+├── com
+│   └── luckey
+│       └── aggregator
+│           └── CouponAppOrchestrator.class
+├── lib
+│   ├── com
+│   │   └── luckey
+│   │       └── aggregators
+│   │           ├── CouponUdemyStub$AggregateCoupons.class
+│   │           ├── CouponUdemyStub$AggregateCoupons$Factory.class
+│   │           ├── CouponUdemyStub$AggregateCouponsResponse.class
+│   │           ├── CouponUdemyStub$AggregateCouponsResponse$Factory.class
+│   │           ├── CouponUdemyStub.class
+│   │           └── CouponUdemyStub$ExtensionMapper.class
+│   └── zz.jar
+└── META-INF
+    └── services.xml
+```
+
+
+
+With the service.xml as follows :
+
+```xml
+<service name="CouponAppOrchestrator" >
+        <Description>
+                The "Ocrchestrator" for the aggregators services, checks if the url passed as input belongs to a supported website, if not, it returns an empty json. input : url.
+        </Description>
+        <messageReceivers>
+                <messageReceiver mep="http://www.w3.org/ns/wsdl/in-only" class="org.apache.axis2.rpc.receivers.RPCInOnlyMessageReceiver" />
+                <messageReceiver  mep="http://www.w3.org/ns/wsdl/in-out"  class="org.apache.axis2.rpc.receivers.RPCMessageReceiver"/>
+        </messageReceivers>
+        <parameter name="ServiceClass" locked="false">com.luckey.aggregator.CouponAppOrchestrator</parameter>
+</service>
+```
+
+
+
+Tree structure of the Notification Setter :
+
+```
+NotificationSetter
+├── lib
+│   ├── json-simple-1.1.1.jar
+│   └── luckey
+│       └── notif
+│           └── clients
+│               ├── EmailSenderStub.class
+│               ├── EmailSenderStub$ExtensionMapper.class
+│               ├── EmailSenderStub$SendMail.class
+│               ├── EmailSenderStub$SendMail$Factory.class
+│               ├── EmailSenderStub$SendMailResponse.class
+│               ├── EmailSenderStub$SendMailResponse$Factory.class
+│               ├── SmsSenderStub.class
+│               ├── SmsSenderStub$ExtensionMapper.class
+│               ├── SmsSenderStub$SendSMS.class
+│               ├── SmsSenderStub$SendSMS$Factory.class
+│               ├── SmsSenderStub$SendSMSResponse.class
+│               └── SmsSenderStub$SendSMSResponse$Factory.class
+├── luckey
+│   └── notif
+│       └── setter
+│           ├── NotificationSetter.class
+│           └── NotificationSetter$UdmeyNotifier.class
+└── META-INF
+└── services.xml
+```
+
+and the service.xml as follows : 
+
+```xml
+<service name="NotificationSetter" >
+        <Description>
+                This service launch a thread which would monitor the price changes on the specified url, input: (String url,int condition_type, String notificationType, String address)
+        </Description>
+        <messageReceivers>
+                <messageReceiver mep="http://www.w3.org/ns/wsdl/in-only" class="org.apache.axis2.rpc.receivers.RPCInOnlyMessageReceiver" />
+                <messageReceiver  mep="http://www.w3.org/ns/wsdl/in-out"  class="org.apache.axis2.rpc.receivers.RPCMessageReceiver"/>
+        </messageReceivers>
+        <parameter name="ServiceClass" locked="false">luckey.notif.setter.NotificationSetter</parameter>
+</service>
+```
+
+
+
+And then upload theses folders to the AWS instance and specifically into :
+
+```
+/home/ubuntu/apache-tomcat-9.0.30/webapps/axis2/WEB-INF/services/
+```
+
+
+
+### 4.3.5. Testing the services : 
+
+following the same tests we did for the service inventory, we test these new web services with POSTMAN :
+
+in the following are the **POST** request we sent and their responses : 
+
+#### Coupon App (Orchestrator):
+
+the uri : 
+
+```
+35.153.41.154:8080/axis2/services/CouponAppOrchestrator/AggregateCoupons
+```
+
+
+
+The request :
+
+```xml
+<soapenv:Envelope  
+	  xmlns:q0="http://aggregator.luckey.com" 
+	  xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+	  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <soapenv:Header></soapenv:Header>
+    <soapenv:Body>
+        <q0:SendMailRequest>
+            <q0:url>https://www.udemy.com/course/design-conceptual-and-meaningful-logos</q0:url>
+        </q0:SendMailRequest>
+    </soapenv:Body>
+</soapenv:Envelope>
+```
+
+the response :
+
+```xml
+<?xml version='1.0' encoding='UTF-8'?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+    <soapenv:Header/>
+    <soapenv:Body>
+        <ns:AggregateCouponsResponse xmlns:ns="http://aggregator.luckey.com">
+            <ns:return>[LOGO72HOURS]</ns:return>
+        </ns:AggregateCouponsResponse>
+    </soapenv:Body>
+</soapenv:Envelope>
+```
+
+
+
+#### Notification setter (Orchestrator ):
+
+the uri : 
+
+```
+35.153.41.154:8080/axis2/services/NotificationSetter/notifyingThreadStarter
+```
+
+
+
+The request :
+
+```xml
+<soapenv:Envelope  
+	  xmlns:q0="http://setter.notif.luckey" 
+	  xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+	  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <soapenv:Header></soapenv:Header>
+    <soapenv:Body>
+        <q0:SendMailRequest>
+            <q0:url>https://www.udemy.com/course/design-conceptual-and-meaningful-logos</q0:url>
+            <q0:condition_type>0</q0:condition_type>
+            <q0:notificationType>email</q0:notificationType>
+            <q0:address>pokater@gmail.com</q0:address>
+        </q0:SendMailRequest>
+    </soapenv:Body>
+</soapenv:Envelope>
+```
+
+the response :
+
+```xml
+<?xml version='1.0' encoding='UTF-8'?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+    <soapenv:Header/>
+    <soapenv:Body>
+        <ns:notifyingThreadStarterResponse xmlns:ns="http://setter.notif.luckey">
+            <ns:return>true</ns:return>
+        </ns:notifyingThreadStarterResponse>
+    </soapenv:Body>
+</soapenv:Envelope>
+```
+
+
+
+
+
+### 4.3.6. Conclusion : 
+
+With this we would have ended up deploying our services and tested that they are working, and we finish this chapter with a familiar picture listing all the available services that we deployed :
+
+![](C:\Users\pixel\Desktop\SOA_THE_PROJECT\report-img\List of all the services.png)
+
+
+
+
 
 # 5. conclusion
 
-
+​	When a technology architecture is business-driven if for IT projects like these, the overarching business vision, goals, and requirements are positioned as the basis for and the primary inﬂuence of the architectural model. This maximizes the potential alignment of technology and business and allows for a technology architecture that can evolve in tandem with the organization as a whole. The result is a continual increase in the value and lifespan of the architecture.
 
 
 
@@ -420,4 +1100,3 @@ So in this layer we could list the main composed services as follows :
 [Five Reasons Why So Many Ecommerce Stores Fail](https://www.appliedi.net/blog/five-reasons-why-so-many-ecommerce-stores-fail/)
 
 [Service‑Oriented Architecture: Analysis and Design for Services and and Microservices - Book - by Thomas Erl](https://books.google.co.ma/books/about/Service_oriented_Architecture.html?id=XVvEoQEACAAJ&source=kp_cover&redir_esc=y)
-
